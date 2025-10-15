@@ -1,22 +1,10 @@
 # Environment Variables Setup
 
-## Important: Alchemy API Key
+## Important: RPC Configuration
 
-The app uses Alchemy for reliable RPC connections. **Alchemy API keys are safe to expose client-side** because they are:
-- Domain-restricted (only work on your deployed domain)
-- Rate-limited per origin
-- Designed for public use in Web3 apps
+The app uses Base's public RPC endpoints by default. No API keys needed!
 
-However, if Vercel's deployment blocks it, you have two options:
-
-### Option 1: Add via Vercel Dashboard (Recommended)
-1. Deploy your app to Vercel
-2. Go to Project Settings → Environment Variables
-3. Add: `NEXT_PUBLIC_ALCHEMY_API_KEY` = `your_alchemy_key`
-4. Redeploy
-
-### Option 2: Use Default Public RPC (No Setup)
-The app works without Alchemy - it falls back to Base's public RPC automatically. Just skip adding the env var.
+For better performance (optional), you can use Alchemy, but it's not required.
 
 ## For Viewers (No Setup Required!)
 
@@ -49,14 +37,10 @@ PINATA_JWT=your_jwt_token_here
 3. Deploy (it will work for viewers immediately)
 
 ### Step 2: Add Environment Variables (Optional)
+
 Go to Project Settings → Environment Variables and add:
 
-**For Better RPC Performance:**
-\`\`\`
-NEXT_PUBLIC_ALCHEMY_API_KEY=your_alchemy_key
-\`\`\`
-
-**For Creator Uploads:**
+**For Creator Uploads (Required for uploading videos):**
 \`\`\`
 PINATA_JWT=your_pinata_jwt
 \`\`\`
@@ -67,12 +51,13 @@ After adding env vars, trigger a new deployment.
 ## Security Notes
 
 ✅ **Safe to expose (NEXT_PUBLIC_):**
-- `NEXT_PUBLIC_ALCHEMY_API_KEY` - Domain-restricted, designed for client use
 - Smart contract addresses
-- RPC endpoints
+- Public RPC endpoints
+- WalletConnect Project IDs
 
 ❌ **Must be server-side only (no NEXT_PUBLIC_):**
 - `PINATA_JWT` - Keeps upload API secure
+- Any API keys or secrets
 - Private keys (never store these anywhere!)
 
 ## Local Development
@@ -80,10 +65,7 @@ After adding env vars, trigger a new deployment.
 Create `.env.local` in your project root:
 
 \`\`\`env
-# Optional: Better RPC performance
-NEXT_PUBLIC_ALCHEMY_API_KEY=your_alchemy_key_here
-
-# Required for uploads
+# Required for uploads only
 PINATA_JWT=your_pinata_jwt_here
 \`\`\`
 
@@ -116,11 +98,6 @@ You can test the entire viewer experience without any API keys:
 5. Copy the JWT token (starts with "eyJ...")
 
 ## Troubleshooting
-
-**"Alchemy API key exposed" warning during deployment:**
-- This is a false positive - Alchemy keys are meant to be public
-- Add the key via Vercel dashboard instead of code
-- Or ignore it - the app works fine with public RPC
 
 **"Pinata JWT not configured" error:**
 - Add `PINATA_JWT` to Vercel environment variables

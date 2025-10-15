@@ -85,7 +85,7 @@ git push -u origin main
 \`\`\`
 
 ### Add Environment Variables in Vercel:
-- `NEXT_PUBLIC_PINATA_JWT` (optional - only for server-side uploads)
+- `PINATA_JWT` (optional - only for server-side uploads)
 
 ## Optional: WalletConnect Support
 

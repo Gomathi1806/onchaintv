@@ -57,14 +57,14 @@ localStorage.setItem(`video_${videoId}`, JSON.stringify(videoData))
 
 ### For Creators (Upload Videos):
 \`\`\`env
-# Option 1: Pinata (Current)
-NEXT_PUBLIC_PINATA_JWT=your_jwt_token
+# Option 1: Pinata (Current) - Server-side only
+PINATA_JWT=your_jwt_token
 
 # Option 2: Web3.Storage (No API key needed - uses wallet signature)
 # No env vars required!
 
-# Option 3: NFT.Storage
-NEXT_PUBLIC_NFT_STORAGE_TOKEN=your_token
+# Option 3: NFT.Storage - Server-side only
+NFT_STORAGE_TOKEN=your_token
 \`\`\`
 
 ### For Viewers:
