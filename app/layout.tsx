@@ -19,7 +19,33 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Creator Paywall - Decentralized Video Platform",
   description: "Upload videos, set micro-fees, earn crypto. Built on Base.",
-    generator: 'v0.app'
+  generator: "v0.app",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Creator Paywall",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Creator Paywall",
+    title: "Creator Paywall - Decentralized Video Platform",
+    description: "Upload videos, set micro-fees, earn crypto. Built on Base.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Creator Paywall",
+    description: "Upload videos, set micro-fees, earn crypto. Built on Base.",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 }
 
 export default function RootLayout({
@@ -29,6 +55,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <meta name="theme-color" content="#3b82f6" />
+      </head>
       <body>
         <Web3Provider>{children}</Web3Provider>
       </body>
