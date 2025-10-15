@@ -1,0 +1,164 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { VideoUpload } from "@/components/video-upload"
+import { Upload, Loader2 } from "lucide-react"
+import { useVideoPaywallContract } from "@/hooks/use-contract"
+import { parseEth, formatEth, calculateFees } from "@/lib/web3-config"
+import { useToast } from "@/hooks/use-toast"
+
+export function UploadVideoDialog() {
+  const [open, setOpen] = useState(false)
+  const [ipfsHash, setIpfsHash] = useState("")
+  const [price, setPrice] = useState("0.001")
+  const [title, setTitle] = useState("")
+  const [isUploading, setIsUploading] = useState(false)
+
+  const { uploadVideo, isPending, isConfirming } = useVideoPaywallContract()
+  const { toast } = useToast()
+
+  const handleUploadComplete = (hash: string, file: File) => {
+    setIpfsHash(hash)
+    // Auto-fill title from filename
+    if (!title) {
+      setTitle(file.name.replace(/\.[^/.]+$/, ""))
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!ipfsHash || !price) {
+      toast({
+        title: "Missing information",
+        description: "Please upload a video and set a price",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsUploading(true)
+      const priceWei = parseEth(price)
+
+      const hash = await uploadVideo(ipfsHash, priceWei)
+
+      toast({
+        title: "Video uploaded!",
+        description: "Your video is now live on the platform",
+      })
+
+      // Reset form
+      setOpen(false)
+      setIpfsHash("")
+      setPrice("0.001")
+      setTitle("")
+    } catch (error) {
+      console.error("Upload error:", error)
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload video",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const priceWei = price ? parseEth(price) : 0n
+  const { platformFee, creatorEarning } = calculateFees(priceWei)
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="lg" className="glow-primary">
+          <Upload className="h-4 w-4 mr-2" />
+          Upload Video
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Upload New Video</DialogTitle>
+          <DialogDescription>Upload your video to IPFS and set a viewing price</DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <VideoUpload onUploadComplete={handleUploadComplete} />
+
+          {ipfsHash && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Video Title (Optional)</Label>
+                <Input
+                  id="title"
+                  placeholder="My awesome video"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="price">Viewing Price (ETH)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.0001"
+                  min="0.0001"
+                  placeholder="0.001"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  required
+                />
+                <p className="text-sm text-muted-foreground">Minimum: 0.0001 ETH</p>
+              </div>
+
+              {price && (
+                <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+                  <p className="text-sm font-medium">Fee Breakdown</p>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Viewer pays:</span>
+                      <span className="font-medium">{formatEth(priceWei)} ETH</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Platform fee (6%):</span>
+                      <span>{formatEth(platformFee)} ETH</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1">
+                      <span className="text-muted-foreground">You earn:</span>
+                      <span className="font-medium text-primary">{formatEth(creatorEarning)} ETH</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button type="submit" className="w-full" size="lg" disabled={isPending || isConfirming || isUploading}>
+                {isPending || isConfirming ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {isPending ? "Confirming..." : "Processing..."}
+                  </>
+                ) : (
+                  "Publish Video"
+                )}
+              </Button>
+            </div>
+          )}
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
