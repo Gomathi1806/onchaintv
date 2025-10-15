@@ -117,7 +117,7 @@ Free static hosting, no environment variables needed for viewers.
 
 ### The Graph Protocol
 Index blockchain events for faster queries:
-```graphql
+\`\`\`graphql
 query {
   videos(first: 20, orderBy: timestamp, orderDirection: desc) {
     id
