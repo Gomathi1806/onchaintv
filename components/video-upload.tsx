@@ -15,9 +15,10 @@ import { cn } from "@/lib/utils"
 interface VideoUploadProps {
   onUploadComplete: (ipfsHash: string, file: File) => void
   className?: string
+  pinataJWT?: string
 }
 
-export function VideoUpload({ onUploadComplete, className }: VideoUploadProps) {
+export function VideoUpload({ onUploadComplete, className, pinataJWT }: VideoUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [thumbnail, setThumbnail] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
@@ -69,9 +70,10 @@ export function VideoUpload({ onUploadComplete, className }: VideoUploadProps) {
     if (!selectedFile) return
 
     console.log("[v0] handleUpload called, file:", selectedFile.name)
+    console.log("[v0] pinataJWT provided:", !!pinataJWT)
 
     try {
-      const result = await upload(selectedFile)
+      const result = await upload(selectedFile, pinataJWT)
       console.log("[v0] Upload complete, calling onUploadComplete")
       onUploadComplete(result.ipfsHash, selectedFile)
     } catch (err) {

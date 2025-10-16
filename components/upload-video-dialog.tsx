@@ -26,6 +26,8 @@ export function UploadVideoDialog() {
   const [price, setPrice] = useState("0.001")
   const [title, setTitle] = useState("")
   const [isUploading, setIsUploading] = useState(false)
+  const [pinataJWT, setPinataJWT] = useState("")
+  const [showJWTInput, setShowJWTInput] = useState(false)
 
   const { uploadVideo, isPending, isConfirming } = useVideoPaywallContract()
   const { toast } = useToast()
@@ -54,7 +56,7 @@ export function UploadVideoDialog() {
       setIsUploading(true)
       const priceWei = parseEth(price)
 
-      const hash = await uploadVideo(ipfsHash, priceWei)
+      const hash = await uploadVideo(ipfsHash, priceWei, showJWTInput ? pinataJWT : undefined)
 
       toast({
         title: "Video uploaded!",
@@ -66,6 +68,8 @@ export function UploadVideoDialog() {
       setIpfsHash("")
       setPrice("0.001")
       setTitle("")
+      setPinataJWT("")
+      setShowJWTInput(false)
     } catch (error) {
       console.error("Upload error:", error)
       toast({
@@ -96,7 +100,45 @@ export function UploadVideoDialog() {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <VideoUpload onUploadComplete={handleUploadComplete} />
+          <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base font-medium">Pinata Configuration</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {showJWTInput ? "Paste your Pinata JWT token" : "Using server-side configuration"}
+                </p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowJWTInput(!showJWTInput)}>
+                {showJWTInput ? "Use Server Config" : "Use My JWT"}
+              </Button>
+            </div>
+
+            {showJWTInput && (
+              <div className="space-y-2">
+                <Label htmlFor="pinataJWT">Pinata JWT Token</Label>
+                <Input
+                  id="pinataJWT"
+                  type="password"
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  value={pinataJWT}
+                  onChange={(e) => setPinataJWT(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Get your JWT from{" "}
+                  <a
+                    href="https://app.pinata.cloud/developers/api-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Pinata Dashboard
+                  </a>
+                </p>
+              </div>
+            )}
+          </div>
+
+          <VideoUpload onUploadComplete={handleUploadComplete} pinataJWT={showJWTInput ? pinataJWT : undefined} />
 
           {ipfsHash && (
             <div className="space-y-4">
