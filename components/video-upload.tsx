@@ -68,11 +68,14 @@ export function VideoUpload({ onUploadComplete, className }: VideoUploadProps) {
   const handleUpload = async () => {
     if (!selectedFile) return
 
+    console.log("[v0] handleUpload called, file:", selectedFile.name)
+
     try {
       const result = await upload(selectedFile)
+      console.log("[v0] Upload complete, calling onUploadComplete")
       onUploadComplete(result.ipfsHash, selectedFile)
     } catch (err) {
-      console.error("Upload failed:", err)
+      console.error("[v0] Upload failed in handleUpload:", err)
     }
   }
 
