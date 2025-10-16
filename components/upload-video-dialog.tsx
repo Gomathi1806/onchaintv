@@ -28,15 +28,30 @@ export function UploadVideoDialog() {
   const [isUploading, setIsUploading] = useState(false)
   const [pinataJWT, setPinataJWT] = useState("")
   const [showJWTInput, setShowJWTInput] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const { uploadVideo, isPending, isConfirming } = useVideoPaywallContract()
   const { toast } = useToast()
 
   const handleUploadComplete = (hash: string, file: File) => {
     setIpfsHash(hash)
+    setUploadError(null) // Clear any previous errors
     // Auto-fill title from filename
     if (!title) {
       setTitle(file.name.replace(/\.[^/.]+$/, ""))
+    }
+  }
+
+  const handleUploadError = (error: string) => {
+    setUploadError(error)
+    // Auto-show JWT input if server config fails
+    if (error.includes("PINATA_JWT") || error.includes("Server upload failed")) {
+      setShowJWTInput(true)
+      toast({
+        title: "Server configuration missing",
+        description: "Please paste your Pinata JWT token to continue",
+        variant: "destructive",
+      })
     }
   }
 
@@ -113,6 +128,23 @@ export function UploadVideoDialog() {
               </Button>
             </div>
 
+            {uploadError && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+                <p className="text-sm text-destructive font-medium">{uploadError}</p>
+                {!showJWTInput && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-destructive hover:text-destructive/80"
+                    onClick={() => setShowJWTInput(true)}
+                  >
+                    Click here to use your own JWT token
+                  </Button>
+                )}
+              </div>
+            )}
+
             {showJWTInput && (
               <div className="space-y-2">
                 <Label htmlFor="pinataJWT">Pinata JWT Token</Label>
@@ -138,7 +170,11 @@ export function UploadVideoDialog() {
             )}
           </div>
 
-          <VideoUpload onUploadComplete={handleUploadComplete} pinataJWT={showJWTInput ? pinataJWT : undefined} />
+          <VideoUpload
+            onUploadComplete={handleUploadComplete}
+            onUploadError={handleUploadError}
+            pinataJWT={showJWTInput ? pinataJWT : undefined}
+          />
 
           {ipfsHash && (
             <div className="space-y-4">

@@ -14,11 +14,12 @@ import { cn } from "@/lib/utils"
 
 interface VideoUploadProps {
   onUploadComplete: (ipfsHash: string, file: File) => void
+  onUploadError?: (error: string) => void
   className?: string
   pinataJWT?: string
 }
 
-export function VideoUpload({ onUploadComplete, className, pinataJWT }: VideoUploadProps) {
+export function VideoUpload({ onUploadComplete, onUploadError, className, pinataJWT }: VideoUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [thumbnail, setThumbnail] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
@@ -78,6 +79,10 @@ export function VideoUpload({ onUploadComplete, className, pinataJWT }: VideoUpl
       onUploadComplete(result.ipfsHash, selectedFile)
     } catch (err) {
       console.error("[v0] Upload failed in handleUpload:", err)
+      const errorMessage = err instanceof Error ? err.message : "Upload failed"
+      if (onUploadError) {
+        onUploadError(errorMessage)
+      }
     }
   }
 
