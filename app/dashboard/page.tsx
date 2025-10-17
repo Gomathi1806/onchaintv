@@ -1,7 +1,7 @@
 "use client"
 
 import { useAccount } from "wagmi"
-import { useCreatorVideos, useVideo } from "@/hooks/use-contract"
+import { useCreatorVideos } from "@/hooks/use-contract"
 import { CreatorStats } from "@/components/creator-stats"
 import { VideoCard } from "@/components/video-card"
 import { UploadVideoDialog } from "@/components/upload-video-dialog"
@@ -13,21 +13,23 @@ import { useMemo } from "react"
 export default function DashboardPage() {
   const { address, isConnected } = useAccount()
   const { connectors, connect } = useConnect()
-  const { videoIds, isLoading } = useCreatorVideos(address)
-  const videoDetails = useVideo(videoIds)
+  const { videoIds, isLoading: isLoadingIds, refetch } = useCreatorVideos(address)
 
-  // Fetch all video details
-  const videos = videoIds.map((id) => videoDetails[id])
+  const videos = useMemo(() => {
+    if (!videoIds || videoIds.length === 0) return []
 
-  // Calculate stats
+    // For now, return video IDs with basic info
+    // The VideoCard component will fetch individual video details
+    return videoIds.map((id) => ({ id }))
+  }, [videoIds])
+
   const stats = useMemo(() => {
-    const validVideos = videos.filter((v) => v !== null)
     return {
-      totalVideos: validVideos.length,
-      totalViews: validVideos.reduce((sum, v) => sum + Number(v.viewCount), 0),
-      totalEarnings: validVideos.reduce((sum, v) => sum + v.totalEarnings, 0n),
+      totalVideos: videoIds?.length || 0,
+      totalViews: 0, // Will be calculated once videos load
+      totalEarnings: 0n,
     }
-  }, [videos])
+  }, [videoIds])
 
   if (!isConnected) {
     return (
@@ -82,7 +84,7 @@ export default function DashboardPage() {
         <div>
           <h2 className="text-xl font-semibold mb-4">Your Videos</h2>
 
-          {isLoading ? (
+          {isLoadingIds ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -93,22 +95,9 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {videos.map(
-                (video) =>
-                  video && (
-                    <VideoCard
-                      key={video.id.toString()}
-                      id={video.id}
-                      ipfsHash={video.ipfsHash}
-                      price={video.price}
-                      viewCount={video.viewCount}
-                      totalEarnings={video.totalEarnings}
-                      timestamp={video.timestamp}
-                      isActive={video.isActive}
-                      isCreator={true}
-                    />
-                  ),
-              )}
+              {videos.map((video) => (
+                <VideoCard key={video.id.toString()} id={video.id} isCreator={true} />
+              ))}
             </div>
           )}
         </div>

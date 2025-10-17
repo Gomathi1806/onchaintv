@@ -3,37 +3,51 @@
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Eye, DollarSign, MoreVertical, Trash2 } from "lucide-react"
+import { Eye, DollarSign, MoreVertical, Trash2, Loader2 } from "lucide-react"
 import { formatEth } from "@/lib/web3-config"
 import { getIPFSUrl } from "@/lib/ipfs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
-
-interface VideoCardProps {
-  id: bigint
-  ipfsHash?: string
-  price: bigint
-  viewCount: bigint
-  totalEarnings?: bigint
-  timestamp: bigint
-  isActive: boolean
-  isCreator?: boolean
-  onDeactivate?: () => void
-}
+import { useVideo } from "@/hooks/use-contract"
+import type { VideoCardProps } from "@/types/video-card" // Declare the VideoCardProps variable
 
 export function VideoCard({
   id,
-  ipfsHash,
-  price,
-  viewCount,
-  totalEarnings,
-  timestamp,
-  isActive,
-  isCreator = false,
+  ipfsHash: propIpfsHash,
+  price: propPrice,
+  viewCount: propViewCount,
+  totalEarnings: propTotalEarnings,
+  timestamp: propTimestamp,
+  isActive: propIsActive,
+  isCreator,
   onDeactivate,
 }: VideoCardProps) {
-  const date = new Date(Number(timestamp) * 1000)
-  const thumbnailUrl = ipfsHash ? getIPFSUrl(ipfsHash, "pinata") : "/placeholder.svg?height=200&width=400"
+  const { video, isLoading } = useVideo(propIpfsHash === undefined ? id : undefined)
+
+  // Use props if provided, otherwise use fetched data
+  const ipfsHash = propIpfsHash ?? video?.ipfsHash
+  const price = propPrice ?? video?.price ?? 0n
+  const viewCount = propViewCount ?? video?.viewCount ?? 0n
+  const totalEarnings = propTotalEarnings ?? video?.totalEarnings ?? 0n
+  const timestamp = propTimestamp ?? video?.timestamp ?? 0n
+  const isActive = propIsActive ?? video?.isActive ?? true
+
+  if (isLoading) {
+    return (
+      <Card className="overflow-hidden">
+        <div className="aspect-video bg-muted flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+        <div className="p-4">
+          <div className="h-4 bg-muted rounded animate-pulse mb-2" />
+          <div className="h-3 bg-muted rounded animate-pulse w-2/3" />
+        </div>
+      </Card>
+    )
+  }
+
+  const date = timestamp ? new Date(Number(timestamp) * 1000) : new Date()
+  const thumbnailUrl = ipfsHash ? getIPFSUrl(ipfsHash, "pinata") : "/video-thumbnail.png"
 
   return (
     <Card className="overflow-hidden group hover:border-primary/50 transition-colors">
@@ -85,7 +99,7 @@ export function VideoCard({
           </div>
         </div>
 
-        {isCreator && totalEarnings !== undefined && (
+        {isCreator && (
           <div className="pt-3 border-t">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Earned:</span>
