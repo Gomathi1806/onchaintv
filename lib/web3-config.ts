@@ -5,7 +5,7 @@ import { coinbaseWallet, injected, walletConnect } from "wagmi/connectors"
 // Contract addresses (update after deployment)
 export const CONTRACT_ADDRESSES = {
   [baseSepolia.id]: "0x0000000000000000000000000000000000000000", // Deploy to Base Sepolia testnet
-  [base.id]: "0x836171fd02f5f7cafe5ff63f343ad21ddeba7345", // NEW CreatorPlatform contract
+  [base.id]: "0xce69830d2f14584c368b362d41e9deb9b2e38b8c", // NEW CreatorPlatform contract (deployed)
 } as const
 
 const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID

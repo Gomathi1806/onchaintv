@@ -15,10 +15,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { VideoUpload } from "@/components/video-upload"
-import { Upload, Loader2 } from "lucide-react"
+import { Upload, Loader2, AlertCircle } from "lucide-react"
 import { useVideoPaywallContract } from "@/hooks/use-contract"
 import { parseEth, formatEth, calculateFees } from "@/lib/web3-config"
 import { useToast } from "@/hooks/use-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export function UploadVideoDialog() {
   const [open, setOpen] = useState(false)
@@ -35,7 +36,7 @@ export function UploadVideoDialog() {
 
   const handleUploadComplete = (hash: string, file: File) => {
     setIpfsHash(hash)
-    setUploadError(null) // Clear any previous errors
+    setUploadError(null)
     // Auto-fill title from filename
     if (!title) {
       setTitle(file.name.replace(/\.[^/.]+$/, ""))
@@ -44,14 +45,10 @@ export function UploadVideoDialog() {
 
   const handleUploadError = (error: string) => {
     setUploadError(error)
-    // Auto-show JWT input if server config fails
-    if (error.includes("PINATA_JWT") || error.includes("Server upload failed")) {
+
+    // Only show JWT input if the error is about missing server configuration
+    if (error.includes("PINATA_JWT") || error.includes("not configured")) {
       setShowJWTInput(true)
-      toast({
-        title: "Server configuration missing",
-        description: "Please paste your Pinata JWT token to continue",
-        variant: "destructive",
-      })
     }
   }
 
@@ -71,7 +68,7 @@ export function UploadVideoDialog() {
       setIsUploading(true)
       const priceWei = parseEth(price)
 
-      const hash = await uploadVideo(ipfsHash, priceWei, showJWTInput ? pinataJWT : undefined)
+      await uploadVideo(ipfsHash, priceWei)
 
       toast({
         title: "Video uploaded!",
@@ -85,6 +82,7 @@ export function UploadVideoDialog() {
       setTitle("")
       setPinataJWT("")
       setShowJWTInput(false)
+      setUploadError(null)
     } catch (error) {
       console.error("Upload error:", error)
       toast({
@@ -115,39 +113,43 @@ export function UploadVideoDialog() {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-medium">Pinata Configuration</Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {showJWTInput ? "Paste your Pinata JWT token" : "Using server-side configuration"}
+          {uploadError && uploadError.includes("PINATA_JWT") && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <p className="font-medium mb-2">Platform IPFS not configured</p>
+                <p className="text-sm mb-3">
+                  The platform owner needs to add <code className="bg-destructive/20 px-1 rounded">PINATA_JWT</code> to
+                  environment variables, or you can use your own Pinata account.
                 </p>
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={() => setShowJWTInput(!showJWTInput)}>
-                {showJWTInput ? "Use Server Config" : "Use My JWT"}
-              </Button>
-            </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowJWTInput(true)}>
+                  Use My Pinata Account
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
 
-            {uploadError && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
-                <p className="text-sm text-destructive font-medium">{uploadError}</p>
-                {!showJWTInput && (
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-destructive hover:text-destructive/80"
-                    onClick={() => setShowJWTInput(true)}
-                  >
-                    Click here to use your own JWT token
-                  </Button>
-                )}
+          {showJWTInput && (
+            <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-base font-medium">Your Pinata JWT</Label>
+                  <p className="text-sm text-muted-foreground mt-1">Upload using your own Pinata account</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowJWTInput(false)
+                    setPinataJWT("")
+                  }}
+                >
+                  Cancel
+                </Button>
               </div>
-            )}
 
-            {showJWTInput && (
               <div className="space-y-2">
-                <Label htmlFor="pinataJWT">Pinata JWT Token</Label>
                 <Input
                   id="pinataJWT"
                   type="password"
@@ -167,8 +169,8 @@ export function UploadVideoDialog() {
                   </a>
                 </p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <VideoUpload
             onUploadComplete={handleUploadComplete}
