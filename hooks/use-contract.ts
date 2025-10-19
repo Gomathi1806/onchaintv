@@ -17,18 +17,26 @@ export function useVideoPaywallContract() {
   })
 
   // Upload video
-  const uploadVideo = async (ipfsHash: string, price: bigint) => {
-    console.log("[v0] uploadVideo called with:", { ipfsHash, price: price.toString(), contractAddress })
+  const uploadVideo = async (ipfsHash: string, price: bigint, nftGate?: `0x${string}`) => {
+    console.log("[v0] uploadVideo called with:", {
+      ipfsHash,
+      price: price.toString(),
+      nftGate: nftGate || "0x0000000000000000000000000000000000000000",
+      contractAddress,
+    })
 
     if (!contractAddress || contractAddress === "0x0000000000000000000000000000000000000000") {
       throw new Error("Contract not deployed on this network")
     }
 
+    // Use zero address if no NFT gate specified
+    const nftGateAddress = nftGate || "0x0000000000000000000000000000000000000000"
+
     const hash = await writeContractAsync({
       address: contractAddress,
       abi: VIDEO_PAYWALL_ABI,
       functionName: "uploadVideo",
-      args: [ipfsHash, price],
+      args: [ipfsHash, price, nftGateAddress], // Now passing all 3 required arguments
     })
 
     console.log("[v0] Transaction submitted, hash:", hash)
@@ -36,14 +44,18 @@ export function useVideoPaywallContract() {
   }
 
   // Unlock video
-  const unlockVideo = async (videoId: bigint, price: bigint) => {
-    console.log("[v0] unlockVideo called with:", { videoId: videoId.toString(), price: price.toString() })
+  const unlockVideo = async (videoId: bigint, price: bigint, referralCode?: string) => {
+    console.log("[v0] unlockVideo called with:", {
+      videoId: videoId.toString(),
+      price: price.toString(),
+      referralCode: referralCode || "",
+    })
 
     const hash = await writeContractAsync({
       address: contractAddress,
       abi: VIDEO_PAYWALL_ABI,
       functionName: "unlockVideo",
-      args: [videoId],
+      args: [videoId, referralCode || ""], // Pass referral code (empty string if none)
       value: price,
     })
 

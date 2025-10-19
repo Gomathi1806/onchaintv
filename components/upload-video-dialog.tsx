@@ -72,8 +72,9 @@ export function UploadVideoDialog() {
       console.log("[v0] Starting video upload to blockchain...")
       console.log("[v0] IPFS Hash:", ipfsHash)
       console.log("[v0] Price (wei):", priceWei.toString())
+      console.log("[v0] NFT Gate: 0x0000000000000000000000000000000000000000 (no gating)")
 
-      const hash = await uploadVideo(ipfsHash, priceWei)
+      const hash = await uploadVideo(ipfsHash, priceWei, "0x0000000000000000000000000000000000000000")
       setTxHash(hash)
 
       console.log("[v0] Transaction submitted successfully, hash:", hash)
@@ -101,16 +102,22 @@ export function UploadVideoDialog() {
       setTxHash(undefined)
     } catch (error) {
       console.error("[v0] Upload error:", error)
+      console.error("[v0] Error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
 
       let errorMessage = "Failed to upload video"
 
       if (error instanceof Error) {
-        if (error.message.includes("User rejected")) {
-          errorMessage = "Transaction was rejected"
+        if (error.message.includes("User rejected") || error.message.includes("user rejected")) {
+          errorMessage = "Transaction was rejected in wallet"
         } else if (error.message.includes("insufficient funds")) {
-          errorMessage = "Insufficient funds for gas"
+          errorMessage = "Insufficient funds for gas fees"
         } else if (error.message.includes("Contract not deployed")) {
           errorMessage = "Contract not available on this network"
+        } else if (error.message.includes("execution reverted")) {
+          errorMessage = "Transaction failed - check contract requirements"
         } else {
           errorMessage = error.message
         }
