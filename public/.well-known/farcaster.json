@@ -14,5 +14,10 @@
     "splashImageUrl": "https://your-domain.com/splash.png",
     "splashBackgroundColor": "#000000",
     "webhookUrl": "https://your-domain.com/api/farcaster/webhook"
+  },
+    
+  "baseBuilder": {
+    "ownerAddress": "0xB469223D231C1A0da6B18f9E8e3099364A846d68"
   }
+
 }
