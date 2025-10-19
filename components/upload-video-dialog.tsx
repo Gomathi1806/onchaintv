@@ -21,7 +21,7 @@ import { parseEth, formatEth, calculateFees } from "@/lib/web3-config"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export function UploadVideoDialog() {
+export function UploadVideoDialog({ onUploadSuccess }: { onUploadSuccess?: () => void }) {
   const [open, setOpen] = useState(false)
   const [ipfsHash, setIpfsHash] = useState("")
   const [price, setPrice] = useState("0.001")
@@ -84,12 +84,15 @@ export function UploadVideoDialog() {
         description: "Waiting for confirmation on the blockchain...",
       })
 
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 3000))
 
       toast({
         title: "Video uploaded!",
         description: "Your video is now live on the platform",
       })
+
+      console.log("[v0] Triggering dashboard refresh...")
+      onUploadSuccess?.()
 
       // Reset form
       setOpen(false)

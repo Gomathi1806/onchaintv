@@ -15,6 +15,10 @@ export default function DashboardPage() {
   const { connectors, connect } = useConnect()
   const { videoIds, isLoading: isLoadingIds, refetch } = useCreatorVideos(address)
 
+  console.log("[v0] Dashboard - Creator address:", address)
+  console.log("[v0] Dashboard - Video IDs:", videoIds)
+  console.log("[v0] Dashboard - Is loading:", isLoadingIds)
+
   const videos = useMemo(() => {
     if (!videoIds || videoIds.length === 0) return []
 
@@ -30,6 +34,11 @@ export default function DashboardPage() {
       totalEarnings: 0n,
     }
   }, [videoIds])
+
+  const handleUploadSuccess = () => {
+    console.log("[v0] Upload success - refetching videos...")
+    refetch()
+  }
 
   if (!isConnected) {
     return (
@@ -69,7 +78,7 @@ export default function DashboardPage() {
               <h1 className="text-2xl font-bold">Creator Dashboard</h1>
               <p className="text-sm text-muted-foreground">Manage your videos and track earnings</p>
             </div>
-            <UploadVideoDialog />
+            <UploadVideoDialog onUploadSuccess={handleUploadSuccess} />
           </div>
         </div>
       </div>
@@ -91,7 +100,7 @@ export default function DashboardPage() {
           ) : videos.length === 0 ? (
             <div className="text-center py-12 border-2 border-dashed rounded-lg">
               <p className="text-muted-foreground mb-4">You haven't uploaded any videos yet</p>
-              <UploadVideoDialog />
+              <UploadVideoDialog onUploadSuccess={handleUploadSuccess} />
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

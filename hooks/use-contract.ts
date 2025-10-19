@@ -32,15 +32,15 @@ export function useVideoPaywallContract() {
     // Use zero address if no NFT gate specified
     const nftGateAddress = nftGate || "0x0000000000000000000000000000000000000000"
 
-    const hash = await writeContractAsync({
+    const hashResult = await writeContractAsync({
       address: contractAddress,
       abi: VIDEO_PAYWALL_ABI,
       functionName: "uploadVideo",
       args: [ipfsHash, price, nftGateAddress], // Now passing all 3 required arguments
     })
 
-    console.log("[v0] Transaction submitted, hash:", hash)
-    return hash
+    console.log("[v0] Transaction submitted, hash:", hashResult)
+    return hashResult
   }
 
   // Unlock video
@@ -51,7 +51,7 @@ export function useVideoPaywallContract() {
       referralCode: referralCode || "",
     })
 
-    const hash = await writeContractAsync({
+    const hashResult = await writeContractAsync({
       address: contractAddress,
       abi: VIDEO_PAYWALL_ABI,
       functionName: "unlockVideo",
@@ -59,8 +59,8 @@ export function useVideoPaywallContract() {
       value: price,
     })
 
-    console.log("[v0] Transaction submitted, hash:", hash)
-    return hash
+    console.log("[v0] Transaction submitted, hash:", hashResult)
+    return hashResult
   }
 
   // Deactivate video
@@ -125,15 +125,22 @@ export function useCreatorVideos(creatorAddress: `0x${string}` | undefined) {
   const chainId = useChainId()
   const contractAddress = CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES]
 
+  console.log("[v0] useCreatorVideos - Creator address:", creatorAddress)
+  console.log("[v0] useCreatorVideos - Contract address:", contractAddress)
+
   const { data, isLoading, error, refetch } = useReadContract({
     address: contractAddress,
     abi: VIDEO_PAYWALL_ABI,
     functionName: "getCreatorVideos",
     args: creatorAddress ? [creatorAddress] : undefined,
     query: {
-      enabled: !!creatorAddress,
+      enabled: !!creatorAddress && !!contractAddress,
+      refetchInterval: 30000, // Refetch every 30 seconds
     },
   })
+
+  console.log("[v0] useCreatorVideos - Data:", data)
+  console.log("[v0] useCreatorVideos - Error:", error)
 
   return {
     videoIds: data || [],

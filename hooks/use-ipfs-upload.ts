@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { uploadToIPFSClient, validateVideoFile, type UploadProgress, type IPFSUploadResult } from "@/lib/ipfs-client"
+import { uploadToIPFSClient, validateVideoFile, type UploadProgress, type IPFSUploadResult } from "@/lib/ipfs"
 import { uploadToIPFSServer } from "@/app/actions/upload-to-ipfs"
 
 interface UseIPFSUploadReturn {
