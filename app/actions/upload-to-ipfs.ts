@@ -15,17 +15,24 @@ interface UploadResult {
 
 export async function uploadToIPFSServer(formData: FormData): Promise<UploadResult> {
   try {
+    console.log("[v0] Server upload started")
+
     const file = formData.get("file") as File
     if (!file) {
+      console.log("[v0] No file provided")
       return { success: false, error: "No file provided" }
     }
 
+    console.log("[v0] File received:", file.name, file.size, "bytes")
+
     const PINATA_JWT = process.env.PINATA_JWT
+    console.log("[v0] PINATA_JWT configured:", !!PINATA_JWT)
 
     if (!PINATA_JWT) {
+      console.log("[v0] PINATA_JWT not found in environment variables")
       return {
         success: false,
-        error: "Pinata JWT not configured. Please add PINATA_JWT to your environment variables.",
+        error: "PINATA_JWT environment variable not configured on server",
       }
     }
 
@@ -49,6 +56,8 @@ export async function uploadToIPFSServer(formData: FormData): Promise<UploadResu
     })
     uploadFormData.append("pinataOptions", options)
 
+    console.log("[v0] Uploading to Pinata...")
+
     // Upload to Pinata
     const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
       method: "POST",
@@ -58,9 +67,11 @@ export async function uploadToIPFSServer(formData: FormData): Promise<UploadResu
       body: uploadFormData,
     })
 
+    console.log("[v0] Pinata response status:", response.status)
+
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("Pinata upload failed:", errorText)
+      console.error("[v0] Pinata upload failed:", errorText)
       return {
         success: false,
         error: `Upload failed: ${response.status} ${response.statusText}`,
@@ -68,6 +79,7 @@ export async function uploadToIPFSServer(formData: FormData): Promise<UploadResu
     }
 
     const data = await response.json()
+    console.log("[v0] Upload successful, IPFS hash:", data.IpfsHash)
 
     return {
       success: true,
@@ -76,7 +88,7 @@ export async function uploadToIPFSServer(formData: FormData): Promise<UploadResu
       gatewayUrl: `https://ipfs.io/ipfs/${data.IpfsHash}`,
     }
   } catch (error) {
-    console.error("Server upload error:", error)
+    console.error("[v0] Server upload error:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "Upload failed",
