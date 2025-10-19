@@ -1,5 +1,11 @@
 
-  "frame": {
+  {
+  "accountAssociation": {
+    "header": "eyJmaWQiOjkyNzgwNCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDhDRDBFYzJlY0Q4ZEIzYjdCRjE2NDg2NjcwZDA2QzhmYjk5NGFBMDYifQ",
+    "payload": "eyJkb21haW4iOiJvbmNoYWludHYudmVyY2VsLmFwcCJ9",
+    "signature": "WdUE5fORMJTzZUswsZ5nkfFjoM+CeYUiuabaqhlulEJGKM6wvjZR7QY3hZnAUasoje4Ala1nmKup7bDAAPg7pRw="
+  },
+    "frame": {
     "version": "next",
     "name": "Creator Paywall",
     "iconUrl": "https://your-domain.com/icon-512.png",
@@ -8,12 +14,5 @@
     "splashImageUrl": "https://your-domain.com/splash.png",
     "splashBackgroundColor": "#000000",
     "webhookUrl": "https://your-domain.com/api/farcaster/webhook"
-  },
-
-{
-  "accountAssociation": {
-    "header": "eyJmaWQiOjkyNzgwNCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDhDRDBFYzJlY0Q4ZEIzYjdCRjE2NDg2NjcwZDA2QzhmYjk5NGFBMDYifQ",
-    "payload": "eyJkb21haW4iOiJvbmNoYWludHYudmVyY2VsLmFwcCJ9",
-    "signature": "WdUE5fORMJTzZUswsZ5nkfFjoM+CeYUiuabaqhlulEJGKM6wvjZR7QY3hZnAUasoje4Ala1nmKup7bDAAPg7pRw="
   }
 }
