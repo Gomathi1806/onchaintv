@@ -30,6 +30,7 @@ export function UploadVideoDialog() {
   const [pinataJWT, setPinataJWT] = useState("")
   const [showJWTInput, setShowJWTInput] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>()
 
   const { uploadVideo, isPending, isConfirming } = useVideoPaywallContract()
   const { toast } = useToast()
@@ -68,7 +69,21 @@ export function UploadVideoDialog() {
       setIsUploading(true)
       const priceWei = parseEth(price)
 
-      await uploadVideo(ipfsHash, priceWei)
+      console.log("[v0] Starting video upload to blockchain...")
+      console.log("[v0] IPFS Hash:", ipfsHash)
+      console.log("[v0] Price (wei):", priceWei.toString())
+
+      const hash = await uploadVideo(ipfsHash, priceWei)
+      setTxHash(hash)
+
+      console.log("[v0] Transaction submitted successfully, hash:", hash)
+
+      toast({
+        title: "Transaction submitted",
+        description: "Waiting for confirmation on the blockchain...",
+      })
+
+      await new Promise((resolve) => setTimeout(resolve, 2000))
 
       toast({
         title: "Video uploaded!",
@@ -83,11 +98,27 @@ export function UploadVideoDialog() {
       setPinataJWT("")
       setShowJWTInput(false)
       setUploadError(null)
+      setTxHash(undefined)
     } catch (error) {
-      console.error("Upload error:", error)
+      console.error("[v0] Upload error:", error)
+
+      let errorMessage = "Failed to upload video"
+
+      if (error instanceof Error) {
+        if (error.message.includes("User rejected")) {
+          errorMessage = "Transaction was rejected"
+        } else if (error.message.includes("insufficient funds")) {
+          errorMessage = "Insufficient funds for gas"
+        } else if (error.message.includes("Contract not deployed")) {
+          errorMessage = "Contract not available on this network"
+        } else {
+          errorMessage = error.message
+        }
+      }
+
       toast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload video",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
@@ -226,15 +257,39 @@ export function UploadVideoDialog() {
               )}
 
               <Button type="submit" className="w-full" size="lg" disabled={isPending || isConfirming || isUploading}>
-                {isPending || isConfirming ? (
+                {isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {isPending ? "Confirming..." : "Processing..."}
+                    Confirm in wallet...
+                  </>
+                ) : isConfirming ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Confirming on blockchain...
+                  </>
+                ) : isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Publishing...
                   </>
                 ) : (
                   "Publish Video"
                 )}
               </Button>
+
+              {txHash && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Transaction:{" "}
+                  <a
+                    href={`https://basescan.org/tx/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {txHash.slice(0, 10)}...{txHash.slice(-8)}
+                  </a>
+                </p>
+              )}
             </div>
           )}
         </form>

@@ -18,23 +18,37 @@ export function useVideoPaywallContract() {
 
   // Upload video
   const uploadVideo = async (ipfsHash: string, price: bigint) => {
-    return await writeContractAsync({
+    console.log("[v0] uploadVideo called with:", { ipfsHash, price: price.toString(), contractAddress })
+
+    if (!contractAddress || contractAddress === "0x0000000000000000000000000000000000000000") {
+      throw new Error("Contract not deployed on this network")
+    }
+
+    const hash = await writeContractAsync({
       address: contractAddress,
       abi: VIDEO_PAYWALL_ABI,
       functionName: "uploadVideo",
       args: [ipfsHash, price],
     })
+
+    console.log("[v0] Transaction submitted, hash:", hash)
+    return hash
   }
 
   // Unlock video
   const unlockVideo = async (videoId: bigint, price: bigint) => {
-    return await writeContractAsync({
+    console.log("[v0] unlockVideo called with:", { videoId: videoId.toString(), price: price.toString() })
+
+    const hash = await writeContractAsync({
       address: contractAddress,
       abi: VIDEO_PAYWALL_ABI,
       functionName: "unlockVideo",
       args: [videoId],
       value: price,
     })
+
+    console.log("[v0] Transaction submitted, hash:", hash)
+    return hash
   }
 
   // Deactivate video
