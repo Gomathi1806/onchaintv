@@ -1,17 +1,17 @@
 {
   "accountAssociation": {
-    "header": "eyJmaWQiOjEsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIn0",
-    "payload": "eyJkb21haW4iOiJleGFtcGxlLmNvbSJ9",
+    "header": "eyJmaWQiOjEsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHhCNDY5MjIzRDIzMUMxQTBkYTZCMThmOUU4ZTMwOTkzNjRBODQ2ZDY4In0",
+    "payload": "eyJkb21haW4iOiJ5b3VyLWRvbWFpbi5jb20ifQ",
     "signature": "MHg..."
   },
   "frame": {
     "version": "next",
     "name": "Creator Paywall",
-    "iconUrl": "https://your-domain.com/icon.png",
+    "iconUrl": "https://your-domain.com/icon-512.png",
     "homeUrl": "https://your-domain.com",
-    "imageUrl": "https://your-domain.com/splash.png",
+    "imageUrl": "https://your-domain.com/og-image.png",
     "splashImageUrl": "https://your-domain.com/splash.png",
     "splashBackgroundColor": "#000000",
-    "webhookUrl": "https://your-domain.com/api/webhook"
+    "webhookUrl": "https://your-domain.com/api/farcaster/webhook"
   }
 }
