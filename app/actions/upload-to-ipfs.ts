@@ -25,8 +25,12 @@ export async function uploadToIPFSServer(formData: FormData): Promise<UploadResu
 
     console.log("[v0] File received:", file.name, file.size, "bytes")
 
-    const PINATA_JWT = process.env.PINATA_JWT
+    const PINATA_JWT = process.env.PINATA_JWT || process.env.pinata_jwt
     console.log("[v0] PINATA_JWT configured:", !!PINATA_JWT)
+    console.log(
+      "[v0] Available env vars:",
+      Object.keys(process.env).filter((k) => k.toLowerCase().includes("pinata")),
+    )
 
     if (!PINATA_JWT) {
       console.log("[v0] PINATA_JWT not found in environment variables")
