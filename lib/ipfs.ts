@@ -1,4 +1,4 @@
-"use server"
+"use client"
 
 // Types
 export interface UploadProgress {
