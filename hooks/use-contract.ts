@@ -4,6 +4,7 @@ import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 
 import { useAccount, useChainId } from "wagmi"
 import { VIDEO_PAYWALL_ABI } from "@/lib/contract-abi"
 import { CONTRACT_ADDRESSES } from "@/lib/web3-config"
+import { useEffect, useState } from "react"
 
 export function useVideoPaywallContract() {
   const chainId = useChainId()
@@ -154,28 +155,65 @@ export function useCreatorVideos(creatorAddress: `0x${string}` | undefined) {
 export function useVideos(offset = 0n, limit = 20n) {
   const chainId = useChainId()
   const contractAddress = CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES]
+  const [videos, setVideos] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const { data, isLoading, error, refetch } = useReadContract({
+  // Get total video count
+  const { data: videoCountData } = useReadContract({
     address: contractAddress,
     abi: VIDEO_PAYWALL_ABI,
-    functionName: "getVideos",
-    args: [offset, limit],
+    functionName: "videoCount",
   })
 
+  useEffect(() => {
+    async function fetchVideos() {
+      if (!videoCountData || !contractAddress) {
+        setIsLoading(false)
+        return
+      }
+
+      console.log("[v0] Total video count:", videoCountData.toString())
+      setIsLoading(true)
+
+      const count = Number(videoCountData)
+      const videosData = []
+
+      // Fetch each video individually
+      for (let i = 1; i <= count; i++) {
+        try {
+          const response = await fetch(
+            `/api/get-video?videoId=${i}&contractAddress=${contractAddress}&chainId=${chainId}`,
+          )
+          if (response.ok) {
+            const videoData = await response.json()
+            videosData.push({
+              id: BigInt(i),
+              creator: videoData.creator,
+              ipfsHash: videoData.ipfsHash,
+              price: BigInt(videoData.price),
+              viewCount: BigInt(videoData.viewCount),
+              timestamp: BigInt(Date.now() / 1000), // Approximate
+              isActive: videoData.isActive,
+            })
+          }
+        } catch (error) {
+          console.error(`[v0] Error fetching video ${i}:`, error)
+        }
+      }
+
+      console.log("[v0] Fetched videos:", videosData)
+      setVideos(videosData)
+      setIsLoading(false)
+    }
+
+    fetchVideos()
+  }, [videoCountData, contractAddress, chainId])
+
   return {
-    videos: data
-      ? data[0].map((id, index) => ({
-          id,
-          creator: data[1][index],
-          price: data[2][index],
-          viewCount: data[3][index],
-          timestamp: data[4][index],
-          isActive: data[5][index],
-        }))
-      : [],
+    videos,
     isLoading,
-    error,
-    refetch,
+    error: null,
+    refetch: () => {}, // TODO: Implement refetch
   }
 }
 

@@ -1,11 +1,16 @@
-/**
- * IPFS Integration - Secure wrapper
- * Uses server actions to keep API keys secure
- */
+"use server"
 
-// Re-export client utilities
-export { validateVideoFile, formatFileSize, generateThumbnail, getIPFSUrl } from "./ipfs-client"
-export type { UploadProgress, IPFSUploadResult } from "./ipfs-client"
+export function getIPFSUrl(ipfsHash: string, gateway: "pinata" | "ipfs" | "cloudflare" = "pinata"): string {
+  // Remove ipfs:// prefix if present
+  const hash = ipfsHash.replace("ipfs://", "")
 
-// Re-export client upload for user-provided keys
-export { uploadToIPFSClient } from "./ipfs-client"
+  switch (gateway) {
+    case "pinata":
+      return `https://gateway.pinata.cloud/ipfs/${hash}`
+    case "cloudflare":
+      return `https://cloudflare-ipfs.com/ipfs/${hash}`
+    case "ipfs":
+    default:
+      return `https://ipfs.io/ipfs/${hash}`
+  }
+}
