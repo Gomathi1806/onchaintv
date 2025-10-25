@@ -6,7 +6,7 @@ import { CreatorStats } from "@/components/creator-stats"
 import { VideoCard } from "@/components/video-card"
 import { UploadVideoDialog } from "@/components/upload-video-dialog"
 import { Button } from "@/components/ui/button"
-import { Wallet, Loader2 } from "lucide-react"
+import { Wallet, Loader2, RefreshCw } from "lucide-react"
 import { useConnect } from "wagmi"
 import { useMemo } from "react"
 
@@ -22,21 +22,27 @@ export default function DashboardPage() {
   const videos = useMemo(() => {
     if (!videoIds || videoIds.length === 0) return []
 
-    // For now, return video IDs with basic info
-    // The VideoCard component will fetch individual video details
+    // Return video IDs - VideoCard component will fetch individual video details
     return videoIds.map((id) => ({ id }))
   }, [videoIds])
 
   const stats = useMemo(() => {
     return {
       totalVideos: videoIds?.length || 0,
-      totalViews: 0, // Will be calculated once videos load
+      totalViews: 0,
       totalEarnings: 0n,
     }
   }, [videoIds])
 
   const handleUploadSuccess = () => {
     console.log("[v0] Upload success - refetching videos...")
+    setTimeout(() => {
+      refetch()
+    }, 3000)
+  }
+
+  const handleManualRefresh = () => {
+    console.log("[v0] Manual refresh triggered")
     refetch()
   }
 
@@ -78,7 +84,12 @@ export default function DashboardPage() {
               <h1 className="text-2xl font-bold">Creator Dashboard</h1>
               <p className="text-sm text-muted-foreground">Manage your videos and track earnings</p>
             </div>
-            <UploadVideoDialog onUploadSuccess={handleUploadSuccess} />
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={handleManualRefresh} disabled={isLoadingIds}>
+                <RefreshCw className={`h-4 w-4 ${isLoadingIds ? "animate-spin" : ""}`} />
+              </Button>
+              <UploadVideoDialog onUploadSuccess={handleUploadSuccess} />
+            </div>
           </div>
         </div>
       </div>
@@ -94,8 +105,9 @@ export default function DashboardPage() {
           <h2 className="text-xl font-semibold mb-4">Your Videos</h2>
 
           {isLoadingIds ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center justify-center py-12 gap-4">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Loading your videos from blockchain...</p>
             </div>
           ) : videos.length === 0 ? (
             <div className="text-center py-12 border-2 border-dashed rounded-lg">

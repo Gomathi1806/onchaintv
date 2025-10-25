@@ -30,14 +30,13 @@ export function useVideoPaywallContract() {
       throw new Error("Contract not deployed on this network")
     }
 
-    // Use zero address if no NFT gate specified
     const nftGateAddress = nftGate || "0x0000000000000000000000000000000000000000"
 
     const hashResult = await writeContractAsync({
       address: contractAddress,
       abi: VIDEO_PAYWALL_ABI,
       functionName: "uploadVideo",
-      args: [ipfsHash, price, nftGateAddress], // Now passing all 3 required arguments
+      args: [ipfsHash, price, nftGateAddress],
     })
 
     console.log("[v0] Transaction submitted, hash:", hashResult)
@@ -125,26 +124,80 @@ export function useVideo(videoId: bigint | undefined) {
 export function useCreatorVideos(creatorAddress: `0x${string}` | undefined) {
   const chainId = useChainId()
   const contractAddress = CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES]
+  const [videoIds, setVideoIds] = useState<bigint[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   console.log("[v0] useCreatorVideos - Creator address:", creatorAddress)
   console.log("[v0] useCreatorVideos - Contract address:", contractAddress)
 
-  const { data, isLoading, error, refetch } = useReadContract({
+  // Get total video count
+  const { data: videoCountData, refetch: refetchCount } = useReadContract({
     address: contractAddress,
     abi: VIDEO_PAYWALL_ABI,
-    functionName: "getCreatorVideos",
-    args: creatorAddress ? [creatorAddress] : undefined,
+    functionName: "videoCount",
     query: {
-      enabled: !!creatorAddress && !!contractAddress,
-      refetchInterval: 30000, // Refetch every 30 seconds
+      enabled: !!contractAddress && !!creatorAddress,
     },
   })
 
-  console.log("[v0] useCreatorVideos - Data:", data)
-  console.log("[v0] useCreatorVideos - Error:", error)
+  useEffect(() => {
+    async function fetchCreatorVideos() {
+      if (!videoCountData || !contractAddress || !creatorAddress) {
+        setIsLoading(false)
+        return
+      }
+
+      console.log("[v0] Total video count:", videoCountData.toString())
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const count = Number(videoCountData)
+        const creatorVideoIds: bigint[] = []
+
+        // Fetch each video and check if it belongs to the creator
+        for (let i = 0; i < count; i++) {
+          try {
+            const response = await fetch(
+              `/api/get-video?videoId=${i}&contractAddress=${contractAddress}&chainId=${chainId}`,
+            )
+
+            if (response.ok) {
+              const videoData = await response.json()
+              console.log(`[v0] Video ${i} creator:`, videoData.creator, "Target:", creatorAddress)
+
+              // Check if this video belongs to the creator (case-insensitive comparison)
+              if (videoData.creator.toLowerCase() === creatorAddress.toLowerCase()) {
+                creatorVideoIds.push(BigInt(i))
+                console.log(`[v0] Found creator video: ${i}`)
+              }
+            }
+          } catch (err) {
+            console.error(`[v0] Error fetching video ${i}:`, err)
+          }
+        }
+
+        console.log("[v0] Creator video IDs:", creatorVideoIds)
+        setVideoIds(creatorVideoIds)
+      } catch (err) {
+        console.error("[v0] Error in fetchCreatorVideos:", err)
+        setError(err instanceof Error ? err : new Error("Failed to fetch videos"))
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchCreatorVideos()
+  }, [videoCountData, contractAddress, creatorAddress, chainId])
+
+  const refetch = () => {
+    console.log("[v0] Refetching creator videos...")
+    refetchCount()
+  }
 
   return {
-    videoIds: data || [],
+    videoIds,
     isLoading,
     error,
     refetch,
@@ -158,7 +211,6 @@ export function useVideos(offset = 0n, limit = 20n) {
   const [videos, setVideos] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // Get total video count
   const { data: videoCountData } = useReadContract({
     address: contractAddress,
     abi: VIDEO_PAYWALL_ABI,
@@ -178,8 +230,7 @@ export function useVideos(offset = 0n, limit = 20n) {
       const count = Number(videoCountData)
       const videosData = []
 
-      // Fetch each video individually
-      for (let i = 1; i <= count; i++) {
+      for (let i = 0; i < count; i++) {
         try {
           const response = await fetch(
             `/api/get-video?videoId=${i}&contractAddress=${contractAddress}&chainId=${chainId}`,
@@ -192,7 +243,7 @@ export function useVideos(offset = 0n, limit = 20n) {
               ipfsHash: videoData.ipfsHash,
               price: BigInt(videoData.price),
               viewCount: BigInt(videoData.viewCount),
-              timestamp: BigInt(Date.now() / 1000), // Approximate
+              timestamp: BigInt(Date.now() / 1000),
               isActive: videoData.isActive,
             })
           }
@@ -213,7 +264,7 @@ export function useVideos(offset = 0n, limit = 20n) {
     videos,
     isLoading,
     error: null,
-    refetch: () => {}, // TODO: Implement refetch
+    refetch: () => {},
   }
 }
 
