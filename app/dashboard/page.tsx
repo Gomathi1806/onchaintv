@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Wallet, Loader2, RefreshCw } from "lucide-react"
 import { useConnect } from "wagmi"
 import { useMemo } from "react"
+import { CreatorEarningsDashboard } from "@/components/creator-earnings-dashboard"
+import { PlatformAdminDashboard } from "@/components/platform-admin-dashboard"
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount()
@@ -95,6 +97,10 @@ export default function DashboardPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8 space-y-8">
+        <CreatorEarningsDashboard creatorAddress={address} />
+
+        <PlatformAdminDashboard />
+
         <CreatorStats
           totalVideos={stats.totalVideos}
           totalViews={stats.totalViews}

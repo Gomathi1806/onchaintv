@@ -13,6 +13,7 @@ import { formatEth } from "@/lib/web3-config"
 import { getIPFSUrl } from "@/lib/ipfs"
 import Link from "next/link"
 import { UnlockVideoButton } from "@/components/unlock-video-button"
+import { VideoShareLink } from "@/components/video-share-link"
 
 export default function VideoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -121,6 +122,8 @@ export default function VideoPage({ params }: { params: Promise<{ id: string }> 
 
           {/* Sidebar */}
           <div className="space-y-6">
+            <VideoShareLink videoId={videoId} hasAccess={canWatch} />
+
             {!canWatch && (
               <Card className="p-6 space-y-4 border-primary/50 glow-primary">
                 <div>

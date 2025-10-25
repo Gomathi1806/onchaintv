@@ -19,8 +19,12 @@ export function useVideoPaywallContract() {
 
   // Upload video
   const uploadVideo = async (ipfsHash: string, price: bigint, nftGate?: `0x${string}`) => {
+    // Remove any ipfs:// prefix if present
+    const cleanHash = ipfsHash.replace(/^ipfs:\/\//, "")
+
     console.log("[v0] uploadVideo called with:", {
-      ipfsHash,
+      originalHash: ipfsHash,
+      cleanHash,
       price: price.toString(),
       nftGate: nftGate || "0x0000000000000000000000000000000000000000",
       contractAddress,
@@ -30,17 +34,50 @@ export function useVideoPaywallContract() {
       throw new Error("Contract not deployed on this network")
     }
 
-    const nftGateAddress = nftGate || "0x0000000000000000000000000000000000000000"
+    // Validate IPFS hash format
+    if (!cleanHash || cleanHash.length < 10) {
+      throw new Error("Invalid IPFS hash format")
+    }
 
-    const hashResult = await writeContractAsync({
-      address: contractAddress,
-      abi: VIDEO_PAYWALL_ABI,
-      functionName: "uploadVideo",
-      args: [ipfsHash, price, nftGateAddress],
-    })
+    // Validate price (must be greater than 0)
+    if (price <= 0n) {
+      throw new Error("Price must be greater than 0")
+    }
 
-    console.log("[v0] Transaction submitted, hash:", hashResult)
-    return hashResult
+    const nftGateAddress = (nftGate || "0x0000000000000000000000000000000000000000") as `0x${string}`
+
+    try {
+      const hashResult = await writeContractAsync({
+        address: contractAddress,
+        abi: VIDEO_PAYWALL_ABI,
+        functionName: "uploadVideo",
+        args: [cleanHash, price, nftGateAddress],
+        gas: 500000n, // Explicit gas limit to prevent estimation issues
+      })
+
+      console.log("[v0] Transaction submitted, hash:", hashResult)
+      return hashResult
+    } catch (error: any) {
+      console.error("[v0] Transaction error:", error)
+
+      // Parse error message for better user feedback
+      if (error.message?.includes("insufficient funds")) {
+        throw new Error("Insufficient funds for gas fees")
+      } else if (error.message?.includes("user rejected")) {
+        throw new Error("Transaction rejected by user")
+      } else if (error.message?.includes("execution reverted")) {
+        // Try to extract revert reason
+        const revertMatch = error.message.match(/reverted with reason string '([^']+)'/)
+        if (revertMatch) {
+          throw new Error(`Contract error: ${revertMatch[1]}`)
+        }
+        throw new Error(
+          "Transaction reverted. Please check: 1) IPFS hash is valid, 2) Price is greater than 0, 3) You have enough gas",
+        )
+      }
+
+      throw error
+    }
   }
 
   // Unlock video

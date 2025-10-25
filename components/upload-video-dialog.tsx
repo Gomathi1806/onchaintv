@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { VideoUpload } from "@/components/video-upload"
-import { Upload, Loader2, AlertCircle } from "lucide-react"
+import { Upload, Loader2, AlertCircle, User } from "lucide-react"
 import { useVideoPaywallContract } from "@/hooks/use-contract"
 import { parseEth, formatEth, calculateFees } from "@/lib/web3-config"
 import { useToast } from "@/hooks/use-toast"
@@ -28,14 +28,16 @@ export function UploadVideoDialog({ onUploadSuccess }: { onUploadSuccess?: () =>
   const [title, setTitle] = useState("")
   const [isUploading, setIsUploading] = useState(false)
   const [pinataJWT, setPinataJWT] = useState("")
-  const [showJWTInput, setShowJWTInput] = useState(false)
+  const [uploadMethod, setUploadMethod] = useState<"platform" | "own">("platform")
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>()
+  const [showJWTInput, setShowJWTInput] = useState(false) // Declared setShowJWTInput variable
 
   const { uploadVideo, isPending, isConfirming } = useVideoPaywallContract()
   const { toast } = useToast()
 
-  const defaultPinataJWT = process.env.NEXT_PUBLIC_PINATA_JWT || ""
+  const defaultPinataJWT = process.env.NEXT_PUBLIC_PINATA_JWT || process.env.PINATA_JWT || ""
+  const hasPlatformJWT = !!defaultPinataJWT
 
   const handleUploadComplete = (hash: string, file: File) => {
     console.log("[v0] Upload complete, IPFS hash:", hash)
@@ -76,12 +78,23 @@ export function UploadVideoDialog({ onUploadSuccess }: { onUploadSuccess?: () =>
       return
     }
 
+    const priceNum = Number.parseFloat(price)
+    if (priceNum < 0.0001) {
+      toast({
+        title: "Invalid price",
+        description: "Price must be at least 0.0001 ETH",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       setIsUploading(true)
       const priceWei = parseEth(price)
 
       console.log("[v0] Starting video upload to blockchain...")
       console.log("[v0] IPFS Hash:", ipfsHash)
+      console.log("[v0] Price (ETH):", price)
       console.log("[v0] Price (wei):", priceWei.toString())
       console.log("[v0] NFT Gate: 0x0000000000000000000000000000000000000000 (no gating)")
 
@@ -95,7 +108,7 @@ export function UploadVideoDialog({ onUploadSuccess }: { onUploadSuccess?: () =>
         description: "Waiting for confirmation on the blockchain...",
       })
 
-      await new Promise((resolve) => setTimeout(resolve, 3000))
+      await new Promise((resolve) => setTimeout(resolve, 5000))
 
       toast({
         title: "Video uploaded!",
@@ -124,17 +137,7 @@ export function UploadVideoDialog({ onUploadSuccess }: { onUploadSuccess?: () =>
       let errorMessage = "Failed to upload video"
 
       if (error instanceof Error) {
-        if (error.message.includes("User rejected") || error.message.includes("user rejected")) {
-          errorMessage = "Transaction was rejected in wallet"
-        } else if (error.message.includes("insufficient funds")) {
-          errorMessage = "Insufficient funds for gas fees"
-        } else if (error.message.includes("Contract not deployed")) {
-          errorMessage = "Contract not available on this network"
-        } else if (error.message.includes("execution reverted")) {
-          errorMessage = "Transaction failed - check contract requirements"
-        } else {
-          errorMessage = error.message
-        }
+        errorMessage = error.message
       }
 
       toast({
@@ -181,24 +184,57 @@ export function UploadVideoDialog({ onUploadSuccess }: { onUploadSuccess?: () =>
             </Alert>
           )}
 
-          {showJWTInput && (
-            <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base font-medium">Your Pinata JWT</Label>
-                  <p className="text-sm text-muted-foreground mt-1">Upload using your own Pinata account</p>
+          <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
+            <Label className="text-base font-medium">Choose Upload Method</Label>
+            <div className="grid gap-3">
+              <button
+                type="button"
+                onClick={() => setUploadMethod("platform")}
+                disabled={!hasPlatformJWT}
+                className={`flex items-start gap-3 rounded-lg border-2 p-4 text-left transition-all ${
+                  uploadMethod === "platform" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                } ${!hasPlatformJWT ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                <div className="rounded-full bg-primary/10 p-2 mt-0.5">
+                  <Upload className="h-4 w-4 text-primary" />
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setShowJWTInput(false)
-                    setPinataJWT("")
-                  }}
-                >
-                  Cancel
-                </Button>
+                <div className="flex-1">
+                  <p className="font-medium">Platform IPFS (Recommended)</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {hasPlatformJWT
+                      ? "Use our IPFS infrastructure - no setup required"
+                      : "Not configured by platform owner"}
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setUploadMethod("own")}
+                className={`flex items-start gap-3 rounded-lg border-2 p-4 text-left transition-all cursor-pointer ${
+                  uploadMethod === "own" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                }`}
+              >
+                <div className="rounded-full bg-accent/10 p-2 mt-0.5">
+                  <User className="h-4 w-4 text-accent" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Your Own Pinata Account</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Use your personal Pinata JWT - you control the storage
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {uploadMethod === "own" && (
+            <div className="space-y-4 rounded-lg border bg-muted/50 p-4">
+              <div>
+                <Label htmlFor="pinataJWT" className="text-base font-medium">
+                  Your Pinata JWT
+                </Label>
+                <p className="text-sm text-muted-foreground mt-1">Enter your Pinata API JWT token</p>
               </div>
 
               <div className="space-y-2">
@@ -208,6 +244,7 @@ export function UploadVideoDialog({ onUploadSuccess }: { onUploadSuccess?: () =>
                   placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                   value={pinataJWT}
                   onChange={(e) => setPinataJWT(e.target.value)}
+                  required={uploadMethod === "own"}
                 />
                 <p className="text-xs text-muted-foreground">
                   Get your JWT from{" "}
@@ -227,7 +264,7 @@ export function UploadVideoDialog({ onUploadSuccess }: { onUploadSuccess?: () =>
           <VideoUpload
             onUploadComplete={handleUploadComplete}
             onUploadError={handleUploadError}
-            pinataJWT={showJWTInput && pinataJWT ? pinataJWT : defaultPinataJWT}
+            pinataJWT={uploadMethod === "own" ? pinataJWT : defaultPinataJWT}
           />
 
           {ipfsHash && (
