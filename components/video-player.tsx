@@ -24,7 +24,14 @@ export function VideoPlayer({ ipfsHash, className, autoPlay = false }: VideoPlay
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
 
-  const videoUrl = getIPFSUrl(ipfsHash, "pinata")
+  const videoUrl = ipfsHash ? getIPFSUrl(ipfsHash, "pinata") : ""
+
+  useEffect(() => {
+    if (!ipfsHash) {
+      setError("No video source available")
+      setIsLoading(false)
+    }
+  }, [ipfsHash])
 
   useEffect(() => {
     const video = videoRef.current
@@ -59,7 +66,7 @@ export function VideoPlayer({ ipfsHash, className, autoPlay = false }: VideoPlay
       video.removeEventListener("pause", handlePause)
       video.removeEventListener("error", handleError)
     }
-  }, [])
+  }, [ipfsHash])
 
   const togglePlay = () => {
     if (videoRef.current) {

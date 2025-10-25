@@ -23,7 +23,16 @@ const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500MB
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"]
 
 // Get IPFS URL from hash
-export function getIPFSUrl(ipfsHash: string, gateway: "pinata" | "ipfs" | "cloudflare" = "pinata"): string {
+export function getIPFSUrl(
+  ipfsHash: string | undefined | null,
+  gateway: "pinata" | "ipfs" | "cloudflare" = "pinata",
+): string {
+  // Validate input
+  if (!ipfsHash || typeof ipfsHash !== "string") {
+    console.error("[v0] getIPFSUrl called with invalid ipfsHash:", ipfsHash)
+    return "" // Return empty string instead of crashing
+  }
+
   const hash = ipfsHash.replace("ipfs://", "")
 
   switch (gateway) {

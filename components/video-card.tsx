@@ -9,7 +9,7 @@ import { getIPFSUrl } from "@/lib/ipfs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { useVideo } from "@/hooks/use-contract"
-import type { VideoCardProps } from "@/types/video-card" // Declare the VideoCardProps variable
+import type { VideoCardProps } from "@/types/video-card"
 
 export function VideoCard({
   id,
@@ -47,7 +47,8 @@ export function VideoCard({
   }
 
   const date = timestamp ? new Date(Number(timestamp) * 1000) : new Date()
-  const thumbnailUrl = ipfsHash ? getIPFSUrl(ipfsHash, "pinata") : "/video-thumbnail.png"
+  const thumbnailUrl =
+    ipfsHash && typeof ipfsHash === "string" ? getIPFSUrl(ipfsHash, "pinata") : "/video-thumbnail.png"
 
   return (
     <Card className="overflow-hidden group hover:border-primary/50 transition-colors">
