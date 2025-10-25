@@ -27,22 +27,22 @@ export async function uploadToIPFSServer(formData: FormData): Promise<UploadResu
 
     const PINATA_JWT = process.env.PINATA_JWT || process.env.pinata_jwt
     console.log("[v0] PINATA_JWT configured:", !!PINATA_JWT)
-    console.log(
-      "[v0] Available env vars:",
-      Object.keys(process.env).filter((k) => k.toLowerCase().includes("pinata")),
-    )
 
     if (!PINATA_JWT) {
       console.log("[v0] PINATA_JWT not found in environment variables")
       return {
         success: false,
-        error: "PINATA_JWT environment variable not configured on server",
+        error: "PINATA_JWT not configured. Please add your Pinata JWT in the environment variables.",
       }
     }
 
-    // Prepare upload to Pinata
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+
+    // Create form data with buffer
     const uploadFormData = new FormData()
-    uploadFormData.append("file", file)
+    const blob = new Blob([buffer], { type: file.type })
+    uploadFormData.append("file", blob, file.name)
 
     // Add metadata
     const metadata = JSON.stringify({
@@ -78,24 +78,27 @@ export async function uploadToIPFSServer(formData: FormData): Promise<UploadResu
       console.error("[v0] Pinata upload failed:", errorText)
       return {
         success: false,
-        error: `Upload failed: ${response.status} ${response.statusText}`,
+        error: `Pinata API error: ${response.status} - ${errorText.substring(0, 100)}`,
       }
     }
 
     const data = await response.json()
     console.log("[v0] Upload successful, IPFS hash:", data.IpfsHash)
 
-    return {
+    const result: UploadResult = {
       success: true,
-      ipfsHash: data.IpfsHash,
+      ipfsHash: String(data.IpfsHash),
       pinataUrl: `https://gateway.pinata.cloud/ipfs/${data.IpfsHash}`,
       gatewayUrl: `https://ipfs.io/ipfs/${data.IpfsHash}`,
     }
+
+    return result
   } catch (error) {
     console.error("[v0] Server upload error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown upload error"
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Upload failed",
+      error: `Upload failed: ${errorMessage}`,
     }
   }
 }

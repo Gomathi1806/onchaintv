@@ -165,12 +165,21 @@ export function useCreatorVideos(creatorAddress: `0x${string}` | undefined) {
 
             if (response.ok) {
               const videoData = await response.json()
-              console.log(`[v0] Video ${i} creator:`, videoData.creator, "Target:", creatorAddress)
+              console.log(`[v0] Video ${i}:`, videoData)
 
-              // Check if this video belongs to the creator (case-insensitive comparison)
-              if (videoData.creator.toLowerCase() === creatorAddress.toLowerCase()) {
+              const isValidVideo =
+                videoData.ipfsHash &&
+                videoData.ipfsHash !== "" &&
+                videoData.ipfsHash !== "0x0" &&
+                videoData.ipfsHash !== "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+              const isCreatorVideo = videoData.creator.toLowerCase() === creatorAddress.toLowerCase()
+
+              if (isValidVideo && isCreatorVideo) {
                 creatorVideoIds.push(BigInt(i))
-                console.log(`[v0] Found creator video: ${i}`)
+                console.log(`[v0] Found valid creator video: ${i}`)
+              } else if (!isValidVideo) {
+                console.log(`[v0] Skipping video ${i} - invalid IPFS hash`)
               }
             }
           } catch (err) {
@@ -230,22 +239,35 @@ export function useVideos(offset = 0n, limit = 20n) {
       const count = Number(videoCountData)
       const videosData = []
 
-      for (let i = 0; i < count; i++) {
+      for (let i = Number(offset); i < Math.min(Number(offset) + Number(limit), count); i++) {
         try {
           const response = await fetch(
             `/api/get-video?videoId=${i}&contractAddress=${contractAddress}&chainId=${chainId}`,
           )
           if (response.ok) {
             const videoData = await response.json()
-            videosData.push({
-              id: BigInt(i),
-              creator: videoData.creator,
-              ipfsHash: videoData.ipfsHash,
-              price: BigInt(videoData.price),
-              viewCount: BigInt(videoData.viewCount),
-              timestamp: BigInt(Date.now() / 1000),
-              isActive: videoData.isActive,
-            })
+            console.log(`[v0] Video ${i}:`, videoData)
+
+            // Filter out invalid videos
+            const isValidVideo =
+              videoData.ipfsHash &&
+              videoData.ipfsHash !== "" &&
+              videoData.ipfsHash !== "0x0" &&
+              videoData.ipfsHash !== "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+            if (isValidVideo) {
+              videosData.push({
+                id: BigInt(i),
+                creator: videoData.creator,
+                ipfsHash: videoData.ipfsHash,
+                price: BigInt(videoData.price),
+                viewCount: BigInt(videoData.viewCount),
+                timestamp: BigInt(Date.now() / 1000),
+                isActive: videoData.isActive,
+              })
+            } else {
+              console.log(`[v0] Skipping video ${i} - invalid IPFS hash`)
+            }
           }
         } catch (error) {
           console.error(`[v0] Error fetching video ${i}:`, error)
@@ -258,7 +280,7 @@ export function useVideos(offset = 0n, limit = 20n) {
     }
 
     fetchVideos()
-  }, [videoCountData, contractAddress, chainId])
+  }, [videoCountData, contractAddress, chainId, offset, limit])
 
   return {
     videos,
