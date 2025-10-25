@@ -35,7 +35,10 @@ export function UploadVideoDialog({ onUploadSuccess }: { onUploadSuccess?: () =>
   const { uploadVideo, isPending, isConfirming } = useVideoPaywallContract()
   const { toast } = useToast()
 
+  const defaultPinataJWT = process.env.NEXT_PUBLIC_PINATA_JWT || ""
+
   const handleUploadComplete = (hash: string, file: File) => {
+    console.log("[v0] Upload complete, IPFS hash:", hash)
     setIpfsHash(hash)
     setUploadError(null)
     // Auto-fill title from filename
@@ -45,11 +48,19 @@ export function UploadVideoDialog({ onUploadSuccess }: { onUploadSuccess?: () =>
   }
 
   const handleUploadError = (error: string) => {
+    console.error("[v0] Upload error in dialog:", error)
     setUploadError(error)
 
-    // Only show JWT input if the error is about missing server configuration
-    if (error.includes("PINATA_JWT") || error.includes("not configured")) {
+    if (
+      !defaultPinataJWT &&
+      (error.includes("PINATA_JWT") || error.includes("not configured") || error.includes("Failed to communicate"))
+    ) {
       setShowJWTInput(true)
+      toast({
+        title: "IPFS Configuration Required",
+        description: "Please provide your Pinata JWT to upload videos",
+        variant: "destructive",
+      })
     }
   }
 
@@ -216,7 +227,7 @@ export function UploadVideoDialog({ onUploadSuccess }: { onUploadSuccess?: () =>
           <VideoUpload
             onUploadComplete={handleUploadComplete}
             onUploadError={handleUploadError}
-            pinataJWT={showJWTInput ? pinataJWT : undefined}
+            pinataJWT={showJWTInput && pinataJWT ? pinataJWT : defaultPinataJWT}
           />
 
           {ipfsHash && (

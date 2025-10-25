@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { uploadToIPFSClient, validateVideoFile, type UploadProgress, type IPFSUploadResult } from "@/lib/ipfs"
-import { uploadToIPFSServer } from "@/app/actions/upload-to-ipfs"
 
 interface UseIPFSUploadReturn {
   upload: (file: File, pinataJWT?: string) => Promise<IPFSUploadResult>
@@ -18,12 +17,17 @@ export function useIPFSUpload(): UseIPFSUploadReturn {
   const [error, setError] = useState<string | null>(null)
 
   const upload = async (file: File, pinataJWT?: string): Promise<IPFSUploadResult> => {
+    console.log("[v0] Upload function called")
+    console.log("[v0] File:", file.name, file.size, "bytes")
+    console.log("[v0] JWT provided:", !!pinataJWT)
+
     setError(null)
     setProgress(null)
 
     // Validate file
     const validation = validateVideoFile(file)
     if (!validation.valid) {
+      console.error("[v0] File validation failed:", validation.error)
       setError(validation.error || "Invalid file")
       throw new Error(validation.error)
     }
@@ -31,49 +35,21 @@ export function useIPFSUpload(): UseIPFSUploadReturn {
     setIsUploading(true)
 
     try {
-      // If user provided JWT, use client-side upload with progress tracking
-      if (pinataJWT) {
-        console.log("[v0] Using client-side upload with provided JWT")
+      if (pinataJWT && pinataJWT.trim()) {
+        console.log("[v0] Using client-side upload with JWT")
         const result = await uploadToIPFSClient(file, pinataJWT, (prog) => {
+          console.log("[v0] Upload progress:", prog.percentage + "%")
           setProgress(prog)
         })
+        console.log("[v0] Client-side upload complete:", result.ipfsHash)
         setIsUploading(false)
         return result
       }
 
-      // Otherwise, try server-side upload (uses PINATA_JWT env var)
-      console.log("[v0] Using server-side upload")
-      const formData = new FormData()
-      formData.append("file", file)
-
-      let result
-      try {
-        result = await uploadToIPFSServer(formData)
-      } catch (err) {
-        console.error("[v0] Server action error:", err)
-        throw new Error("Failed to communicate with server. Please try again.")
-      }
-
-      console.log("[v0] Server upload result:", result)
-
-      if (!result || typeof result !== "object") {
-        throw new Error("Invalid response from server")
-      }
-
-      if (!result.success) {
-        throw new Error(result.error || "Server upload failed")
-      }
-
-      if (!result.ipfsHash) {
-        throw new Error("No IPFS hash returned from server")
-      }
-
-      setIsUploading(false)
-      return {
-        ipfsHash: result.ipfsHash,
-        pinataUrl: result.pinataUrl || "",
-        gatewayUrl: result.gatewayUrl || "",
-      }
+      console.error("[v0] No PINATA_JWT provided")
+      throw new Error(
+        "PINATA_JWT not configured. Please add NEXT_PUBLIC_PINATA_JWT to your environment variables or provide your own JWT.",
+      )
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Upload failed"
       console.error("[v0] Upload error:", errorMessage)

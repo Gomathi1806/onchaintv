@@ -70,15 +70,18 @@ export function VideoUpload({ onUploadComplete, onUploadError, className, pinata
   const handleUpload = async () => {
     if (!selectedFile) return
 
-    console.log("[v0] handleUpload called, file:", selectedFile.name)
-    console.log("[v0] pinataJWT provided:", !!pinataJWT)
+    console.log("[v0] Starting upload...")
+    console.log("[v0] File:", selectedFile.name, selectedFile.size, "bytes")
+    console.log("[v0] JWT provided:", !!pinataJWT)
+    console.log("[v0] JWT length:", pinataJWT?.length || 0)
 
     try {
       const result = await upload(selectedFile, pinataJWT)
-      console.log("[v0] Upload complete, calling onUploadComplete")
+      console.log("[v0] Upload successful!")
+      console.log("[v0] IPFS Hash:", result.ipfsHash)
       onUploadComplete(result.ipfsHash, selectedFile)
     } catch (err) {
-      console.error("[v0] Upload failed in handleUpload:", err)
+      console.error("[v0] Upload failed:", err)
       const errorMessage = err instanceof Error ? err.message : "Upload failed"
       if (onUploadError) {
         onUploadError(errorMessage)
