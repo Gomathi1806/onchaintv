@@ -9,19 +9,25 @@ import { useState } from "react"
 import { FarcasterProvider } from "./farcaster-context"
 
 export function Web3Provider({ children }: { children: React.ReactNode }) {
+  console.log("[v0] Web3Provider initializing...")
+
   const [queryClient] = useState(
     () =>
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 10 * 1000, // Data becomes stale after 10 seconds
-            gcTime: 5 * 60 * 1000, // Cache for 5 minutes
-            refetchOnWindowFocus: true, // Refetch when user returns to tab
-            refetchOnMount: true, // Always refetch on component mount
+            staleTime: 10 * 1000,
+            gcTime: 5 * 60 * 1000,
+            refetchOnWindowFocus: true,
+            refetchOnMount: true,
+            retry: 1,
+            retryDelay: 1000,
           },
         },
       }),
   )
+
+  console.log("[v0] Web3Provider initialized successfully")
 
   return (
     <WagmiProvider config={config}>

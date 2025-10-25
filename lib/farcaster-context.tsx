@@ -31,12 +31,16 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function initFarcaster() {
+      console.log("[v0] FarcasterProvider initializing...")
+
       try {
         // Dynamically import Farcaster SDK
         const { default: farcasterSdk } = await import("@farcaster/miniapp-sdk")
+        console.log("[v0] Farcaster SDK loaded")
 
         // Check if running in Farcaster mini app
         const inFarcaster = farcasterSdk.isInMiniApp()
+        console.log("[v0] Is in Farcaster:", inFarcaster)
         setIsInFarcaster(inFarcaster)
 
         if (inFarcaster) {
@@ -45,6 +49,7 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
           // Get user context
           const context = await farcasterSdk.context
           if (context?.user) {
+            console.log("[v0] Farcaster user:", context.user.username)
             setUser({
               fid: context.user.fid,
               username: context.user.username,
@@ -55,17 +60,24 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
 
           // Signal that the app is ready
           await farcasterSdk.actions.ready()
+          console.log("[v0] Farcaster ready signal sent")
         }
 
         setIsReady(true)
+        console.log("[v0] FarcasterProvider ready")
       } catch (error) {
         console.error("[v0] Failed to initialize Farcaster SDK:", error)
         setIsReady(true)
+        setIsInFarcaster(false)
       }
     }
 
     initFarcaster()
   }, [])
+
+  if (!isReady) {
+    return null
+  }
 
   return <FarcasterContext.Provider value={{ isInFarcaster, user, sdk, isReady }}>{children}</FarcasterContext.Provider>
 }
